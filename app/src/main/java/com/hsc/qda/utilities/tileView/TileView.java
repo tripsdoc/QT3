@@ -454,11 +454,18 @@ public class TileView extends ZoomPanLayout implements
      * @param view    View instance to be added to the TileView.
      * @param x       Relative x position the View instance should be positioned at.
      * @param y       Relative y position the View instance should be positioned at.
-     * @param anchorX The x-axis position of a marker will be offset by a number equal to the width of the marker multiplied by this value.
-     * @param anchorY The y-axis position of a marker will be offset by a number equal to the height of the marker multiplied by this value.
+     * @param absoluteAnchorX The x-axis position of a marker will be offset by a number equal to the width of the marker multiplied by this value.
+     * @param absoluteAnchorY The y-axis position of a marker will be offset by a number equal to the height of the marker multiplied by this value.
      * @return The View instance added to the TileView.
      */
-
+    public View addLayoutMarker( View view, double x, double y, Float relativeAnchorX, Float relativeAnchorY, float absoluteAnchorX, float absoluteAnchorY ) {
+        return mMarkerLayout.addLayoutMarker( view,
+                mCoordinateTranslater.translateX( x ),
+                mCoordinateTranslater.translateY( y ),
+                relativeAnchorX, relativeAnchorY,
+                absoluteAnchorX, absoluteAnchorY
+        );
+    }
     /**
      * Add a marker to the the TileView.  The marker can be any View.
      * No LayoutParams are required; the View will be laid out using WRAP_CONTENT for both width and height, and positioned based on the parameters.

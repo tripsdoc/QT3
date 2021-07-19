@@ -8,10 +8,11 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 
-class NetworkClient {
+class NetworkClient(private val url: String) {
 
     companion object {
-        const val BASE_URL = "http://192.168.1.20:9220/api/"
+        const val BASE_URL = "http://192.168.16.16:9220/api/"
+        const val BASE_QT3 = "http://192.168.14.147:9220/api/"
     }
 
     private var mRetrofit: Retrofit? = null
@@ -25,7 +26,7 @@ class NetworkClient {
             client = OkHttpClient.Builder().addInterceptor(loggingInterceptor).build()
             mRetrofit = Retrofit
                     .Builder()
-                    .baseUrl(BASE_URL)
+                    .baseUrl(url)
                     .addConverterFactory(GsonConverterFactory.create())
                     .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                     .client(client)

@@ -2,7 +2,6 @@ package com.hsc.qda.utilities.tileView;
 
 import android.content.Context;
 import android.graphics.Rect;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -26,6 +25,21 @@ public class MarkerLayout extends ViewGroup {
         return mScale;
     }
 
+    public View addLayoutMarker( View view, int x, int y, Float relativeX, Float relativeY, float absoluteX, float absoluteY ) {
+        ViewGroup.LayoutParams defaultLayoutParams = view.getLayoutParams();
+        LayoutParams markerLayoutParams = (defaultLayoutParams != null)
+                ? generateLayoutParams(defaultLayoutParams)
+                : generateDefaultLayoutParams();
+        markerLayoutParams.x = x;
+        markerLayoutParams.y = y;
+        markerLayoutParams.relativeAnchorX = relativeX;
+        markerLayoutParams.relativeAnchorY = relativeY;
+        markerLayoutParams.absoluteAnchorX = absoluteX;
+        markerLayoutParams.absoluteAnchorY = absoluteY;
+        markerLayoutParams.mode = 1;
+        return addMarker( view, markerLayoutParams );
+    }
+
     public View addMarker( View view, int x, int y, Float relativeX, Float relativeY, float absoluteX, float absoluteY ) {
         LayoutParams layoutParams = new MarkerLayout.LayoutParams(
                 LayoutParams.WRAP_CONTENT,
@@ -46,11 +60,25 @@ public class MarkerLayout extends ViewGroup {
         if (lp == null) {
             return;
         }
-        lp.x = x;
-        lp.y = y;
-        populateLayoutParams(view);
-        view.setLeft(lp.mLeft);
-        view.setTop(lp.mTop);
+        if (lp.mode == 0) {
+            lp.x = x;
+            lp.y = y;
+            populateLayoutParams(view);
+            view.setLeft(lp.mLeft);
+            view.setTop(lp.mTop);
+        } else {
+            MarkerLayout.LayoutParams layoutParams = (MarkerLayout.LayoutParams) view.getLayoutParams();
+            layoutParams.x = x;
+            layoutParams.y = y;
+            moveMarker( view, layoutParams );
+        }
+    }
+
+    public void moveMarker( View view, MarkerLayout.LayoutParams params ) {
+        if( indexOfChild( view ) > -1 ) {
+            view.setLayoutParams( params );
+            requestLayout();
+        }
     }
 
     public void removeMarker( View view ) {
@@ -141,14 +169,26 @@ public class MarkerLayout extends ViewGroup {
         }
     }
 
+    @Override
+    protected MarkerLayout.LayoutParams generateDefaultLayoutParams() {
+        return new MarkerLayout.LayoutParams( MarkerLayout.LayoutParams.WRAP_CONTENT, MarkerLayout.LayoutParams.WRAP_CONTENT, 0, 0 );
+    }
+
+    @Override
+    protected MarkerLayout.LayoutParams generateLayoutParams(ViewGroup.LayoutParams layoutParams ) {
+        return new MarkerLayout.LayoutParams( layoutParams );
+    }
+
     public static class LayoutParams extends ViewGroup.LayoutParams {
 
         public int x = 0;
         public int y = 0;
-        public float relativeAnchorX;
-        public float relativeAnchorY;
+        public Float relativeAnchorX = null;
+        public Float relativeAnchorY = null;
         public float absoluteAnchorX;
         public float absoluteAnchorY;
+
+        public int mode = 0;
 
         public int mTop;
         public int mLeft;
@@ -166,6 +206,16 @@ public class MarkerLayout extends ViewGroup {
             mHitRect.right = mRight;
             mHitRect.bottom = mBottom;
             return mHitRect;
+        }
+
+        public LayoutParams( ViewGroup.LayoutParams source ) {
+            super( source );
+        }
+
+        public LayoutParams( int width, int height, int left, int top ) {
+            super( width, height );
+            x = left;
+            y = top;
         }
 
         public LayoutParams( int width, int height, int left, int top, Float relativeAnchorLeft, Float relativeAnchorTop, float absoluteAnchorLeft, float absoluteAnchorTop ) {

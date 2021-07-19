@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">QDA</string>
+    <string name="app_name">QT3</string>
     <string name="title_activity_login">Login</string>
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>

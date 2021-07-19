@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageView
 import com.hsc.qda.R
@@ -24,6 +25,7 @@ import com.hsc.qda.utilities.maps.RoomSpecs
 import com.hsc.qda.utilities.tileView.TileView
 import io.reactivex.disposables.Disposable
 import kotlinx.android.synthetic.main.activity_retrieve.*
+import kotlinx.android.synthetic.main.tag_marker.view.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -39,6 +41,7 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
     private lateinit var currentWarehouse: String
     private lateinit var arrayTags: ArrayList<String>
     private lateinit var arrayHBL: ArrayList<String>
+    private lateinit var arrayDN: ArrayList<String>
     private lateinit var mainHandler : Handler
     private lateinit var specs: RoomSpecs
 
@@ -61,13 +64,13 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_retrieve)
         WifiReceiver.bindListener(this)
-        networkClient = NetworkClient() //API for getting data from Database
         userData = UserPreferences(this)
         userTag = userData.getTag(UserPreferences.AVAILABLE_TAG).toString()
         tagViewList = HashMap()
         callOutTagList = HashMap()
 
         arrayHBL = ArrayList()
+        arrayDN = ArrayList()
         arrayTags = ArrayList()
 
         mainHandler = Handler(Looper.getMainLooper())
@@ -76,8 +79,11 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
 
         warehouses = "111"
         currentWarehouse = "111"
-        initializeIpAddress()
         setupView()
+
+        refreshBtn.setOnClickListener {
+            callTagList()
+        }
     }
 
     private val updateTagData = object: Runnable{
@@ -102,7 +108,6 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
 
         currentWarehouse = "111"
 
-        //val imgMapPath = "map_01_$warehouse.png"
         val imgMapPath = "map_01_$currentWarehouse/"
         val filename = "%d_%d.jpg"
 
@@ -113,7 +118,7 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
             addDetailLevel(1F, imgMapPath + "125/" + filename, 256, 256)
             addDetailLevel(0.5F, imgMapPath + "250/" + filename, 128, 128)
             defineBounds(specs.west, specs.north, specs.east, specs.south)
-            setScaleLimits(0F, 3F)
+            setScaleLimits(0F, 7F)
             scale = 0.5F
             setShouldRenderWhilePanning(true)
         }
@@ -122,85 +127,34 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
         tileViewMapLayout.addView(tileView)
     }
 
-    private fun checkIfTagsCanBeDisplayed(warehouse: String): Boolean {
-        return if(checkArrayData(warehouse)) {
-            val convert = warehouse.split("-")
-            currentWarehouse == convert[0]
-        } else {
-            currentWarehouse == warehouse
-        }
-    }
-
-    private fun checkArrayData(warehouse: String): Boolean {
-        val data = arrayOf("Loading", "Main", "Out")
-        for (item in data) {
-            if (warehouse.contains(item)) {
-                return true
-            }
-        }
-        return false
-    }
-
-    fun updatePosition(data: List<Tag>) {
-        s += 1
-        //updateText()
-        for (tag in data) {
-            /*GlobalScope.launch(Dispatchers.IO) {
-                val responseData = TagReport(tag.tagId, "${tag.location[0]}", "${tag.location[1]}", "$startTime", "$endTime")
-                listData.add(responseData)
-            }*/
-            if (tagViewList.contains(tag.tagId)) {
-                tileView.moveMarker(
-                    tagViewList[tag.tagId],
-                    tag.location[1],
-                    tag.location[0]
-                )
-            } else {
-                if (userTag.contains(tag.tagId)) {
-                    tagViewList[tag.tagId] = addTagForklift(
-                        tag.tagId,
-                        tag.location[1],
-                        tag.location[0]
-                    )
-                } else {
-                    tagViewList[tag.tagId] = addTagMarker(
-                        tag.tagId,
-                        tag.location[1],
-                        tag.location[0]
-                    )
-                }
-            }
-        }
-    }
-
     fun updateQdaPosition(data: List<QdaPositionResponse>) {
         s += 1
-        //updateText()
         for (tag in data) {
-            /*GlobalScope.launch(Dispatchers.IO) {
-                val responseData = TagReport(tag.id, "${tag.smoothedPositionX}", "${tag.smoothedPositionY}", "$startTime", "$endTime")
-                listData.add(responseData)
-            }*/
-            if (tagViewList.contains(tag.id)) {
-                tileView.moveMarker(
-                    tagViewList[tag.id],
-                    tag.smoothedPositionY,
-                    tag.smoothedPositionX
-                )
-            } else {
-                if (userTag.contains(tag.id)) {
-                    tagViewList[tag.id] = addTagForklift(
-                        tag.id,
+            if (tag.areaName.contains("02-111")) {
+                if (tagViewList.contains(tag.id)) {
+                    tileView.moveMarker(
+                        tagViewList[tag.id],
                         tag.smoothedPositionY,
                         tag.smoothedPositionX
                     )
                 } else {
-                    tagViewList[tag.id] = addTagMarker(
-                        tag.id,
-                        tag.smoothedPositionY,
-                        tag.smoothedPositionX
-                    )
+                    if (userTag.contains(tag.id)) {
+                        tagViewList[tag.id] = addTagForklift(
+                            tag.id,
+                            tag.smoothedPositionY,
+                            tag.smoothedPositionX
+                        )
+                    } else {
+                        tagViewList[tag.id] = addTagMarker(
+                            tag.id,
+                            tag.smoothedPositionY,
+                            tag.smoothedPositionX
+                        )
+                    }
                 }
+            } else {
+                tileView.removeMarker(tagViewList[tag.id])
+                tagViewList.remove(tag.id)
             }
         }
     }
@@ -215,42 +169,16 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
     @SuppressLint("InflateParams")
     private fun addTagMarker(tagId: String, x: Double, y: Double): View {
         try {
-            val marker = ImageView(this)
-            marker.tag = tagId
-            marker.visibility = View.GONE
-
-            val index: Int = arrayTags.indexOf(tagId)
-            if(index != -1) {
-                marker.visibility = View.VISIBLE
-                marker.setImageResource(R.drawable.marker_red)
-                marker.setOnClickListener(object: DoubleClickListener() {
-                    override fun onDoubleClick() {
-                        /*qpeNetworkClient.activateTAGService(tagId)
-                            ?.enqueue(object : Callback<QpeActivateTAGResponse> {
-                                override fun onFailure(
-                                    call: Call<QpeActivateTAGResponse>,
-                                    t: Throwable
-                                ) {
-                                }
-                                override fun onResponse(
-                                    call: Call<QpeActivateTAGResponse>,
-                                    response: Response<QpeActivateTAGResponse>
-                                ) {
-                                    Toast.makeText(
-                                        applicationContext,
-                                        "Tag Activated",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            })*/
-                    }
-
-                    override fun onSingleClick() {
-                        //mapHelper.callOutMap(callOutTagList, tileView, specs, currentWarehouse, tagId)
-                    }
-                })
+            val tagView = LayoutInflater.from(this).inflate(R.layout.tag_marker, null, false)
+            val index = arrayTags.indexOf(tagId)
+            Log.d("Array", arrayDN.joinToString(","))
+            if (index != -1) {
+                val dn = arrayDN[index]
+                if (index < arrayDN.size) {
+                    tagView.tagText.text = dn
+                }
             }
-            return tileView.addMarker(marker, x, y, -0.5F, -1.0F, 0F, 0F)
+            return tileView.addLayoutMarker(tagView, x, y, -0.5F, -1.0F, 0F, 0F)
         } catch (e: Exception) {
             Log.d("Data", "Error Marker : $tagId -> ${e.message}")
             return View(this)
@@ -271,13 +199,16 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
         tagViewList.clear()
         arrayTags.clear()
         arrayHBL.clear()
+        arrayDN.clear()
     }
 
     private fun callTagList() {
         refreshTag()
         networkClient.retrieveTagList()
             ?.enqueue(object : Callback<RetrieveResponse> {
-                override fun onFailure(call: Call<RetrieveResponse>, t: Throwable) {}
+                override fun onFailure(call: Call<RetrieveResponse>, t: Throwable) {
+                    Log.d("Debug", t.message.toString())
+                }
                 override fun onResponse(
                     call: Call<RetrieveResponse>,
                     response: Response<RetrieveResponse>
@@ -288,12 +219,7 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
     }
 
     private fun processTagData() {
-        if (mode == 0) {
-            QuupaPositioningEngine.bindListener(this)
-            QuupaPositioningEngine(this).observePositions()
-        } else {
-            QuupaDataAggregator(this).observePositions()
-        }
+        QuupaDataAggregator(this).observePositions()
     }
 
     private fun processTagData(response: Response<RetrieveResponse>) {
@@ -301,6 +227,7 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
             if (response.body()!!.status) {
                 for (tag in response.body()!!.data) {
                     arrayTags.add(tag.Tag)
+                    arrayDN.add(tag.DN)
                 }
                 availableTags = arrayTags.joinToString(",")
                 Log.d("Debug Tag", arrayTags.joinToString(","))
@@ -339,15 +266,17 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
             ip shr 8 and 0xff,
             ip shr 16 and 0xff
         )
-        if (QuupaClient.QDA_URL.contains(ipAddress)) {
-            mode = 1
-            dataAddress = QuupaClient.QDA_URL
-            QuupaClient.QDA_URL
-        } else {
+        if (QuupaClient.QPA_URL.contains(ipAddress)) {
             mode = 0
-            dataAddress = QuupaClient.QPA_URL
-            QuupaClient.QPA_URL
+            dataAddress = QuupaClient.QDA_URL
+            networkClient = NetworkClient(NetworkClient.BASE_URL)
+        } else {
+            mode = 1
+            dataAddress = QuupaClient.QT3_URL
+            networkClient = NetworkClient(NetworkClient.BASE_QT3)
         }
+        exportLabel.text = "Retrieve (Mode : $mode)"
+        mainHandler.post(updateTagData)
     }
 
     override fun onStart() {
@@ -357,7 +286,7 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
 
     override fun onResume() {
         super.onResume()
-        mainHandler.post(updateTagData)
+        initializeIpAddress()
     }
 
     override fun onPause() {
@@ -376,15 +305,16 @@ class RetrieveActivity : AppCompatActivity(), OnWifiChanged, OnFinishedSingleReq
     }
 
     override fun onWifiChanged(ipAddress: String) {
-        if (QuupaClient.QDA_URL.contains(ipAddress)) {
-            mode = 1
-            dataAddress = QuupaClient.QDA_URL
-            QuupaClient.QDA_URL
-        } else {
+        if (QuupaClient.QPA_URL.contains(ipAddress)) {
             mode = 0
-            dataAddress = QuupaClient.QPA_URL
-            QuupaClient.QPA_URL
+            dataAddress = QuupaClient.QDA_URL
+            networkClient = NetworkClient(NetworkClient.BASE_URL)
+        } else {
+            mode = 1
+            dataAddress = QuupaClient.QT3_URL
+            networkClient = NetworkClient(NetworkClient.BASE_QT3)
         }
+        exportLabel.text = "Retrieve (Mode : $mode)"
         callTagList()
     }
 }

@@ -44,12 +44,6 @@ class QuupaPositioningEngine(context: Context) {
         val observe: Observable<TagPositionResponse>? = quupaClient.getTagPosition(
             activity.availableTags
         )
-        observe?.subscribeOn(Schedulers.newThread())
-            ?.doOnSubscribe { startTimer() }
-            ?.doAfterTerminate { stopTimer() }
-            ?.observeOn(AndroidSchedulers.mainThread())
-            ?.map { result: TagPositionResponse -> result.tags }
-            ?.subscribe(activity::updatePosition, this::errorHandler)
     }
 
     private fun onErrorQpeAPI(t: Throwable) {

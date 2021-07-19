@@ -17,14 +17,12 @@ import kotlinx.android.synthetic.main.activity_home.*
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var userData: UserPreferences
-    private lateinit var networkClient: NetworkClient
     lateinit var availableTags: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
         userData = UserPreferences(this)
-        networkClient = NetworkClient()
         availableTags = userData.getTag(UserPreferences.AVAILABLE_TAG).toString()
         setupView()
     }

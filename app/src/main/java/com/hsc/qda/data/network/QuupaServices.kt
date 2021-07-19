@@ -12,7 +12,7 @@ interface QuupaServices {
         @Query("tag") tags: String
     ): Observable<TagPositionResponse>
 
-    @GET("getTagPosition")
+    @GET("getTagPosition?ignoreUnknownTags=true")
     fun getQdaPosition(
         @Query("tag") tags: String
     ): Observable<List<QdaPositionResponse>>

@@ -11,8 +11,9 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class QuupaClient(private val url: String) {
     companion object {
-        const val QPA_URL = "http://192.168.1.20:9132/qpe/"
-        const val QDA_URL = "http://192.168.14.147:9440/qda/"
+        const val QPA_URL = "http://192.168.40.100:8080/qpe/"
+        const val QDA_URL = "http://192.168.16.121:8080/qda/"
+        const val QT3_URL = "http://192.168.14.147:9440/qda/"
     }
 
     private var retrofit: Retrofit? = null
